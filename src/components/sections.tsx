@@ -87,6 +87,10 @@ const faqs = [
     q: "How long does a rewrite take?",
     a: "[Client to confirm the delivery time.]",
   },
+  {
+    q: "Does this work for jobs in India and the UAE?",
+    a: "Yes. You tell us whether you're applying in India or the UAE, and whether you're a fresher or experienced. The checks change to match, for example phone format, the details we recommend, and which sections matter most.",
+  },
 ];
 
 export function Faq() {

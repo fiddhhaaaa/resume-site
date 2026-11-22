@@ -1,15 +1,62 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { Level, Market } from "@/lib/types";
 
 const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
 const ALLOWED = [".pdf", ".docx"];
+
+function ChoiceGroup<T extends string>({
+  legend,
+  name,
+  options,
+  value,
+  onChange,
+}: {
+  legend: string;
+  name: string;
+  options: { value: T; label: string }[];
+  value: T | null;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <fieldset className="mt-5 text-left">
+      <legend className="text-sm font-medium">{legend}</legend>
+      <div className="mt-2 flex gap-3">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className={`flex-1 cursor-pointer rounded-lg border px-4 py-2 text-center text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-500 ${
+              value === o.value
+                ? "border-indigo-600 bg-indigo-50 font-medium"
+                : "border-gray-300 bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={o.value}
+              checked={value === o.value}
+              onChange={() => onChange(o.value)}
+              className="sr-only"
+            />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 export default function UploadBox() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [level, setLevel] = useState<Level | null>(null);
+  const [applyingTo, setApplyingTo] = useState<Market | null>(null);
+
+  const ready = Boolean(file && level && applyingTo);
 
   function pick(f: File | undefined) {
     if (!f) return;
@@ -26,6 +73,12 @@ export default function UploadBox() {
     }
     setError("");
     setFile(f);
+  }
+
+  function handleCheck() {
+    if (!file || !level || !applyingTo) return;
+    // Phase 2 replaces this with a call to /api/check
+    console.log({ file: file.name, level, applyingTo });
   }
 
   return (
@@ -65,14 +118,39 @@ export default function UploadBox() {
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
+      <ChoiceGroup<Level>
+        legend="Where are you in your career?"
+        name="level"
+        value={level}
+        onChange={setLevel}
+        options={[
+          { value: "fresher", label: "Fresher (0 to 1 year)" },
+          { value: "experienced", label: "I have work experience" },
+        ]}
+      />
+
+      <ChoiceGroup<Market>
+        legend="Which country are you applying for jobs in?"
+        name="applyingTo"
+        value={applyingTo}
+        onChange={setApplyingTo}
+        options={[
+          { value: "IN", label: "India" },
+          { value: "AE", label: "UAE" },
+        ]}
+      />
+
       <button
-        disabled={!file}
-        className="mt-4 w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+        onClick={handleCheck}
+        disabled={!ready}
+        className="mt-6 w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
         Check my resume free
       </button>
       <p className="mt-2 text-xs text-gray-500">
-        Free. No card needed. We never sell your resume.
+        {ready
+          ? "Free. No card needed. We never sell your resume."
+          : "Add your file and choose both options to continue."}
       </p>
     </div>
   );
