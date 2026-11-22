@@ -1,5 +1,6 @@
 import { scorePhone } from "./phone";
-import type { Issue, ModuleResult, ScoreInput } from "./types";
+import { CAP } from "./caps";
+import type { Cap, Issue, ModuleResult, ScoreInput } from "./types";
 
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 
@@ -118,5 +119,20 @@ export function scoreContact({ parsed, level, applyingTo }: ScoreInput): ModuleR
     tips.push("Mention your notice period or when you can join.");
   }
 
-  return { id: "contact", label: "Contact details", points, max: 10, issues, passed, tips };
+  const caps: Cap[] = [];
+  const emailFound = EMAIL_RE.test(text);
+  if (!emailFound || !phone.valid) {
+    caps.push({
+      max: CAP.cannotContact,
+      reason:
+        !emailFound && !phone.valid
+          ? "We couldn't find an email address or a valid phone number, so employers can't contact you."
+          : !emailFound
+            ? "We couldn't find an email address, so employers can't contact you by email."
+            : "We couldn't find a valid phone number, so employers can't call you.",
+    });
+  }
+  return { id: "contact", label: "Contact details", points, max: 10, issues, passed, tips, caps };
+
+  
 }

@@ -1,6 +1,8 @@
-import { findSections } from "./sections";
+
 import { extractStatements, hasNumber } from "./bullets";
-import type { Issue, ModuleResult, ScoreInput } from "./types";
+import { CAP } from "./caps";
+import { findSections } from "./sections";
+import type { Cap, Issue, ModuleResult, ScoreInput } from "./types";
 
 const MAX = 25;
 
@@ -12,7 +14,6 @@ const STRONG_VERBS = new Set([
   "optimise", "automate", "architect", "oversee", "spearhead", "launch",
 ]);
 
-// Words that end in "ed" but don't describe a result
 const WEAK_STARTS = new Set([
   "worked", "assisted", "helped", "involved", "participated", "attended",
   "tasked", "used", "experienced", "skilled", "motivated", "dedicated",
@@ -36,19 +37,35 @@ const CERT_RE =
   /\b(?:certified|certification|certificate|course|workshop|hackathon|award|scholarship|training|nptel|coursera|udemy)\b/i;
 
 function startsWithAction(statement: string): boolean {
-  const first = statement.split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, "");
+  const first = statement
+    .split(/\s+/)[0]
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+
   if (WEAK_STARTS.has(first)) return false;
-  return STRONG_VERBS.has(first) || (first.length > 3 && first.endsWith("ed"));
+
+  return (
+    STRONG_VERBS.has(first) ||
+    (first.length > 3 && first.endsWith("ed"))
+  );
 }
+
+// ----------------------------------------------------
+// EXPERIENCED CANDIDATE SCORING
+// ----------------------------------------------------
 
 function scoreExperienced(text: string): ModuleResult {
   const { bodies } = findSections(text);
-  const statements = extractStatements(bodies.get("experience") ?? text);
+  const statements = extractStatements(
+    bodies.get("experience") ?? text
+  );
+
   const total = statements.length;
 
   const issues: Issue[] = [];
   const passed: string[] = [];
   const tips: string[] = [];
+
   let points = 0;
 
   if (total === 0) {
@@ -71,13 +88,19 @@ function scoreExperienced(text: string): ModuleResult {
 
     // Numbers (12)
     const withNumbers = statements.filter(hasNumber).length;
-    const numPts = Math.round(Math.min(1, withNumbers / total / 0.5) * 12);
+
+    const numPts = Math.round(
+      Math.min(1, withNumbers / total / 0.5) * 12
+    );
+
     points += numPts;
+
     if (numPts < 12) {
       issues.push({
         message: `Only ${withNumbers} of ${total} bullet points include a number. Add figures such as %, amounts, team size or time saved, for example “Grew regional sales by 22% in 12 months”.`,
         lost: 12 - numPts,
       });
+
       tips.push(
         "If your results are confidential, use ranges or relative numbers, such as “more than 20 clients”."
       );
@@ -87,8 +110,13 @@ function scoreExperienced(text: string): ModuleResult {
 
     // Action verbs (6)
     const withVerbs = statements.filter(startsWithAction).length;
-    const verbPts = Math.round(Math.min(1, withVerbs / total / 0.6) * 6);
+
+    const verbPts = Math.round(
+      Math.min(1, withVerbs / total / 0.6) * 6
+    );
+
     points += verbPts;
+
     if (verbPts < 6) {
       issues.push({
         message: `${total - withVerbs} of ${total} bullet points don't start with an action verb. Start with words like “Led”, “Built”, “Reduced” or “Delivered”.`,
@@ -99,38 +127,86 @@ function scoreExperienced(text: string): ModuleResult {
     }
   }
 
-  // Overused phrases (4), checked across the whole resume
+  // Overused phrases (4)
   const lower = text.toLowerCase();
-  const foundPhrases = STOCK_PHRASES.filter((p) => lower.includes(p));
+
+  const foundPhrases = STOCK_PHRASES.filter((phrase) =>
+    lower.includes(phrase)
+  );
+
   if (foundPhrases.length === 0) {
     points += 4;
     passed.push("No overused phrases");
   } else {
     const lost = Math.min(4, foundPhrases.length);
+
     points += 4 - lost;
+
     issues.push({
       message: `Overused phrases found: ${foundPhrases
         .slice(0, 3)
-        .map((p) => `“${p}”`)
+        .map((phrase) => `“${phrase}”`)
         .join(", ")}. Replace them with specific results.`,
       lost,
     });
   }
 
-  return { id: "achievements", label: "Achievements and results", points, max: MAX, issues, passed, tips };
+  // Score caps for major gaps
+  const caps: Cap[] = [];
+
+  if (total === 0) {
+    caps.push({
+      max: CAP.majorGap,
+      reason:
+        "We couldn't find bullet points describing your work.",
+    });
+  } else if (!statements.some(hasNumber)) {
+    caps.push({
+      max: CAP.majorGap,
+      reason:
+        "None of your bullet points include a number or measurable result.",
+    });
+  }
+
+  return {
+    id: "achievements",
+    label: "Achievements and results",
+    points,
+    max: MAX,
+    issues,
+    passed,
+    tips,
+    caps,
+  };
 }
+
+// ----------------------------------------------------
+// FRESHER CANDIDATE SCORING
+// ----------------------------------------------------
 
 function scoreFresher(text: string): ModuleResult {
   const { found, bodies } = findSections(text);
-  const ids = ["projects", "internships", "experience"] as const;
 
-  let body = ids.map((id) => bodies.get(id) ?? "").join("\n");
-  if (!body.trim() && ids.some((id) => found.has(id))) body = text;
+  const ids = [
+    "projects",
+    "internships",
+    "experience",
+  ] as const;
+
+  let body = ids
+    .map((id) => bodies.get(id) ?? "")
+    .join("\n");
+
+  if (!body.trim() && ids.some((id) => found.has(id))) {
+    body = text;
+  }
 
   const statements = extractStatements(body);
+
   const issues: Issue[] = [];
   const passed: string[] = [];
   const tips: string[] = [];
+
   let points = 0;
 
   if (statements.length === 0) {
@@ -140,9 +216,13 @@ function scoreFresher(text: string): ModuleResult {
       lost: 22,
     });
   } else {
-    // Enough detail (9)
-    const subPts = Math.round(Math.min(1, statements.length / 4) * 9);
+    // Enough project detail (9)
+    const subPts = Math.round(
+      Math.min(1, statements.length / 4) * 9
+    );
+
     points += subPts;
+
     if (subPts < 9) {
       issues.push({
         message:
@@ -150,10 +230,12 @@ function scoreFresher(text: string): ModuleResult {
         lost: 9 - subPts,
       });
     } else {
-      passed.push("Projects and internships are described in detail");
+      passed.push(
+        "Projects and internships are described in detail"
+      );
     }
 
-    // Tools named (6)
+    // Tools or methods mentioned (6)
     if (TOOLS_RE.test(body)) {
       points += 6;
       passed.push("Tools or methods are named");
@@ -165,12 +247,17 @@ function scoreFresher(text: string): ModuleResult {
       });
     }
 
-    // Results shown (7)
+    // Project outcomes (7)
     const withOutcome = statements.filter(
-      (s) => hasNumber(s) || OUTCOME_RE.test(s)
+      (statement) =>
+        hasNumber(statement) || OUTCOME_RE.test(statement)
     ).length;
-    const outPts = withOutcome >= 2 ? 7 : withOutcome === 1 ? 4 : 0;
+
+    const outPts =
+      withOutcome >= 2 ? 7 : withOutcome === 1 ? 4 : 0;
+
     points += outPts;
+
     if (outPts < 7) {
       issues.push({
         message:
@@ -185,7 +272,10 @@ function scoreFresher(text: string): ModuleResult {
   // Certifications, courses or achievements (3)
   if (found.has("certifications") || CERT_RE.test(text)) {
     points += 3;
-    passed.push("Certifications, courses or achievements found");
+
+    passed.push(
+      "Certifications, courses or achievements found"
+    );
   } else {
     issues.push({
       message:
@@ -194,14 +284,46 @@ function scoreFresher(text: string): ModuleResult {
     });
   }
 
-  if (!/github\.com|gitlab\.com|behance\.net|portfolio/i.test(text)) {
-    tips.push("If your projects are online, add a GitHub or portfolio link.");
+  // Portfolio suggestion
+  if (
+    !/github\.com|gitlab\.com|behance\.net|portfolio/i.test(text)
+  ) {
+    tips.push(
+      "If your projects are online, add a GitHub or portfolio link."
+    );
   }
 
-  return { id: "practical", label: "Projects and practical work", points, max: MAX, issues, passed, tips };
+  // Score caps for major gaps
+  const caps: Cap[] = [];
+
+  if (statements.length === 0) {
+    caps.push({
+      max: CAP.majorGap,
+      reason:
+        "We couldn't find project or internship descriptions.",
+    });
+  }
+
+  return {
+    id: "practical",
+    label: "Projects and practical work",
+    points,
+    max: MAX,
+    issues,
+    passed,
+    tips,
+    caps,
+  };
 }
 
-export function scoreAchievements({ parsed, level }: ScoreInput): ModuleResult {
+// ----------------------------------------------------
+// MAIN FUNCTION
+// ----------------------------------------------------
+
+export function scoreAchievements({
+  parsed,
+  level,
+}: ScoreInput): ModuleResult {
   return level === "fresher"
     ? scoreFresher(parsed.text)
     : scoreExperienced(parsed.text);

@@ -1,4 +1,7 @@
-import type { Issue, ModuleResult, ScoreInput } from "./types";
+
+import { CAP } from "./caps";
+import type { Cap, Issue, ModuleResult, ScoreInput } from "./types";
+
 
 export type SectionId =
   | "experience"
@@ -188,6 +191,12 @@ export function scoreSections({ parsed, level, applyingTo }: ScoreInput): Module
       tips.push("Add your CGPA or percentage next to your degree. Indian employers often ask for it.");
     }
   }
-
-  return { id: "sections", label: "Sections and dates", points, max: 15, issues, passed, tips };
+    const caps: Cap[] = [];
+    if (level === "experienced" && !found.has("experience")) {
+      caps.push({ max: CAP.majorGap, reason: "We couldn't find an Experience section." });
+   }
+   if (level === "fresher" && !found.has("education")) {
+     caps.push({ max: CAP.majorGap, reason: "We couldn't find an Education section." });
+   }
+    return { id: "sections", label: "Sections and dates", points, max: 15, issues, passed, tips, caps };
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { Level, Market } from "@/lib/types";
+import { ROLES } from "@/data/roles";
 
 const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
 const ALLOWED = [".pdf", ".docx"];
@@ -55,6 +56,8 @@ export default function UploadBox() {
   const [dragging, setDragging] = useState(false);
   const [level, setLevel] = useState<Level | null>(null);
   const [applyingTo, setApplyingTo] = useState<Market | null>(null);
+  const [role, setRole] = useState("");
+  const [jobAd, setJobAd] = useState("");
   const [loading, setLoading] = useState(false); // moved inside the component
   const [result, setResult] = useState<unknown>(null); // moved inside the component
 
@@ -87,6 +90,8 @@ export default function UploadBox() {
       body.append("file", file);
       body.append("level", level);
       body.append("applyingTo", applyingTo);
+      body.append("role", role);
+      body.append("jobAd", jobAd);
 
       const res = await fetch("/api/check", { method: "POST", body });
       const data = await res.json();
@@ -146,6 +151,40 @@ export default function UploadBox() {
           { value: "experienced", label: "I have work experience" },
         ]}
       />
+
+            <div className="mt-5 text-left">
+        <label htmlFor="role" className="text-sm font-medium">
+          Which job are you applying for?{" "}
+          <span className="font-normal text-gray-500">(optional)</span>
+        </label>
+        <select
+          id="role"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Not listed, skip</option>
+          {ROLES.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <details className="mt-4 text-left">
+        <summary className="cursor-pointer text-sm font-medium">
+          Paste the job ad for a more accurate keyword check (optional)
+        </summary>
+        <textarea
+          value={jobAd}
+          onChange={(e) => setJobAd(e.target.value)}
+          maxLength={8000}
+          rows={6}
+          placeholder="Paste the job description here"
+          className="mt-2 w-full rounded-lg border border-gray-300 p-3 text-sm"
+        />
+      </details>
 
       <ChoiceGroup<Market>
         legend="Which country are you applying for jobs in?"

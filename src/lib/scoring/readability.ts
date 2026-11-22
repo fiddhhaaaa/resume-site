@@ -1,4 +1,6 @@
+
 import type { Issue, ModuleResult, ScoreInput } from "./types";
+import { CAP } from "./caps";
 
 const MAX = 25;
 const ICON_RE = /[\uE000-\uF8FF\uFFFD]/g; // icon-font symbols and broken characters
@@ -15,8 +17,24 @@ export function scoreReadability({ parsed, level }: ScoreInput): ModuleResult {
         "We couldn't read any text in this file. It may be a scanned or image-only PDF. ATS software can't read images, so export a text-based PDF from Word or Google Docs.",
       lost: MAX,
     });
-    return { id: "readability", label: "Readability", points: 0, max: MAX, issues, passed, tips };
+
+    return {
+      id: "readability",
+      label: "Readability",
+      points: 0,
+      max: MAX,
+      issues,
+      passed,
+      tips,
+      caps: [
+        {
+          max: CAP.unreadable,
+          reason: "We couldn't read any text in your file, so software can't read it either.",
+        },
+      ],
+    };
   }
+
   passed.push("Text can be read by software");
 
   // Columns
@@ -64,6 +82,7 @@ export function scoreReadability({ parsed, level }: ScoreInput): ModuleResult {
 
   // Icon-font symbols that show up as blank squares or odd characters
   const icons = parsed.text.match(ICON_RE)?.length ?? 0;
+
   if (icons > 0) {
     issues.push({
       message:
@@ -90,6 +109,7 @@ export function scoreReadability({ parsed, level }: ScoreInput): ModuleResult {
   }
 
   const lost = issues.reduce((sum, i) => sum + i.lost, 0);
+
   return {
     id: "readability",
     label: "Readability",

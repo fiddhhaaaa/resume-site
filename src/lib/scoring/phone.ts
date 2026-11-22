@@ -1,6 +1,8 @@
+
 import { findPhoneNumbersInText, type CountryCode } from "libphonenumber-js/max";
 
 import type { Market } from "@/lib/types";
+
 const TRY_REGIONS: CountryCode[] = ["IN", "AE"];
 
 export function scorePhone(text: string, applyingTo: Market) {
@@ -31,7 +33,7 @@ export function scorePhone(text: string, applyingTo: Market) {
         issues.push("This looks like a landline. Recruiters prefer a mobile number.");
       }
 
-      return { points, max: MAX, issues };
+      return { points, max: MAX, issues, valid: true };
     }
   }
 
@@ -45,5 +47,6 @@ export function scorePhone(text: string, applyingTo: Market) {
       ? "A phone number was found, but it doesn't look valid. Check the digits and the country code."
       : "No phone number found."
   );
-  return { points: anyFound ? 1 : 0, max: MAX, issues };
+
+  return { points: anyFound ? 1 : 0, max: MAX, issues, valid: false };
 }
