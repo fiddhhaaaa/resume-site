@@ -1,6 +1,6 @@
 import type { Issue, ModuleResult, ScoreInput } from "./types";
 
-type SectionId =
+export type SectionId =
   | "experience"
   | "internships"
   | "education"
@@ -63,7 +63,7 @@ function normalise(line: string): string {
     .trim();
 }
 
-function findSections(text: string) {
+export function findSections(text: string) {
   const lines = text.split(/\r?\n/).map((l) => l.trim());
   const found = new Set<SectionId>();
   const bodies = new Map<SectionId, string>();
@@ -184,9 +184,6 @@ export function scoreSections({ parsed, level, applyingTo }: ScoreInput): Module
     );
 
     // Tips: advice only, no points
-    if (!found.has("certifications")) {
-      tips.push("Add certifications or online courses that match the role you want.");
-    }
     if (applyingTo === "IN" && !/cgpa|gpa|percentage|\d\s?%|\/\s?10\b/i.test(text)) {
       tips.push("Add your CGPA or percentage next to your degree. Indian employers often ask for it.");
     }

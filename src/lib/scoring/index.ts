@@ -1,6 +1,7 @@
 import { scoreContact } from "./contact";
 import { scoreReadability } from "./readability";
 import { scoreSections } from "./sections";
+import { scoreAchievements } from "./achievements";
 import type { CheckResult, ModuleResult, ScoreInput } from "./types";
 
 function bandFor(total: number): CheckResult["band"] {
@@ -15,6 +16,7 @@ export function runScoring(input: ScoreInput): CheckResult {
   scoreReadability(input),
   scoreContact(input),
   scoreSections(input),
+  scoreAchievements(input),
 ];
   const earned = modules.reduce((sum, m) => sum + m.points, 0);
   const possible = modules.reduce((sum, m) => sum + m.max, 0);
