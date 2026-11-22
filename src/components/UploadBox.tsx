@@ -55,6 +55,8 @@ export default function UploadBox() {
   const [dragging, setDragging] = useState(false);
   const [level, setLevel] = useState<Level | null>(null);
   const [applyingTo, setApplyingTo] = useState<Market | null>(null);
+  const [loading, setLoading] = useState(false); // moved inside the component
+  const [result, setResult] = useState<unknown>(null); // moved inside the component
 
   const ready = Boolean(file && level && applyingTo);
 
@@ -75,10 +77,26 @@ export default function UploadBox() {
     setFile(f);
   }
 
-  function handleCheck() {
+  async function handleCheck() {
     if (!file || !level || !applyingTo) return;
-    // Phase 2 replaces this with a call to /api/check
-    console.log({ file: file.name, level, applyingTo });
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("level", level);
+      body.append("applyingTo", applyingTo);
+
+      const res = await fetch("/api/check", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setResult(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -142,16 +160,23 @@ export default function UploadBox() {
 
       <button
         onClick={handleCheck}
-        disabled={!ready}
+        disabled={!ready || loading}
         className="mt-6 w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Check my resume free
+        {loading ? "Checking…" : "Check my resume free"}
       </button>
       <p className="mt-2 text-xs text-gray-500">
         {ready
           ? "Free. No card needed. We never sell your resume."
           : "Add your file and choose both options to continue."}
       </p>
+
+      {/* Temporary debug view, replaced by the real results screen later */}
+      {result !== null && (
+        <pre className="mt-6 overflow-x-auto rounded-lg bg-gray-900 p-4 text-left text-xs text-green-300">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
