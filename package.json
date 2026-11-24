@@ -13,8 +13,10 @@
     "libphonenumber-js": "^1.13.17",
     "mammoth": "^1.13.0",
     "next": "16.4.6",
+    "postgres": "^4.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "resend": "^6.39.0",
     "unpdf": "^1.9.1"
   },
   "devDependencies": {

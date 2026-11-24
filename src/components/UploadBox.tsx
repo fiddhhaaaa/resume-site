@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -5,6 +6,7 @@ import type { Level, Market } from "@/lib/types";
 import type { CheckResult } from "@/lib/scoring/types";
 import { ROLES } from "@/data/roles";
 import ResultsView from "./ResultsView";
+import EmailGate from "./EmailGate";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = [".pdf", ".docx"];
@@ -25,6 +27,7 @@ function ChoiceGroup<T extends string>({
   return (
     <fieldset className="mt-5 text-left">
       <legend className="text-sm font-medium">{legend}</legend>
+
       <div className="mt-2 flex gap-3">
         {options.map((option) => (
           <label
@@ -43,6 +46,7 @@ function ChoiceGroup<T extends string>({
               onChange={() => onChange(option.value)}
               className="sr-only"
             />
+
             {option.label}
           </label>
         ))}
@@ -65,6 +69,9 @@ export default function UploadBox() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
 
+  // Claim ID for the email-gated report
+  const [claimId, setClaimId] = useState<string | null>(null);
+
   useEffect(() => {
     if (result) {
       resultRef.current?.scrollIntoView({
@@ -78,7 +85,17 @@ export default function UploadBox() {
     setResult(null);
     setFile(null);
     setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setClaimId(null);
+
+    // Allow the same file to be selected again
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   const ready = Boolean(file && level && applyingTo);
@@ -112,9 +129,11 @@ export default function UploadBox() {
     setLoading(true);
     setError("");
     setResult(null);
+    setClaimId(null);
 
     try {
       const body = new FormData();
+
       body.append("file", file);
       body.append("level", level);
       body.append("applyingTo", applyingTo);
@@ -132,10 +151,18 @@ export default function UploadBox() {
         throw new Error(data.error ?? "Something went wrong.");
       }
 
+      // Store the ATS analysis result
       setResult(data.result as CheckResult);
+
+      // Store the report claim ID if database saving succeeded
+      setClaimId(
+        typeof data.claimId === "string" ? data.claimId : null
+      );
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Something went wrong."
+        error instanceof Error
+          ? error.message
+          : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -144,6 +171,7 @@ export default function UploadBox() {
 
   return (
     <div id="check" className="mx-auto mt-10 max-w-xl scroll-mt-24">
+      {/* Resume upload area */}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(event) => {
@@ -177,19 +205,27 @@ export default function UploadBox() {
           type="file"
           accept=".pdf,.docx"
           className="hidden"
+          onClick={(event) => event.stopPropagation()}
           onChange={(event) => pick(event.target.files?.[0])}
         />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {/* Error message */}
+      {error && (
+        <p className="mt-3 text-sm text-red-600">{error}</p>
+      )}
 
+      {/* Career level */}
       <ChoiceGroup<Level>
         legend="Where are you in your career?"
         name="level"
         value={level}
         onChange={setLevel}
         options={[
-          { value: "fresher", label: "Fresher (0 to 1 year)" },
+          {
+            value: "fresher",
+            label: "Fresher (0 to 1 year)",
+          },
           {
             value: "experienced",
             label: "I have work experience",
@@ -197,10 +233,13 @@ export default function UploadBox() {
         ]}
       />
 
+      {/* Target job role */}
       <div className="mt-5 text-left">
         <label htmlFor="role" className="text-sm font-medium">
           Which job are you applying for?{" "}
-          <span className="font-normal text-gray-500">(optional)</span>
+          <span className="font-normal text-gray-500">
+            (optional)
+          </span>
         </label>
 
         <select
@@ -210,17 +249,23 @@ export default function UploadBox() {
           className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
         >
           <option value="">Not listed, skip</option>
+
           {ROLES.map((roleOption) => (
-            <option key={roleOption.id} value={roleOption.id}>
+            <option
+              key={roleOption.id}
+              value={roleOption.id}
+            >
               {roleOption.title}
             </option>
           ))}
         </select>
       </div>
 
+      {/* Optional job description */}
       <details className="mt-4 text-left">
         <summary className="cursor-pointer text-sm font-medium">
-          Paste the job ad for a more accurate keyword check (optional)
+          Paste the job ad for a more accurate keyword check
+          (optional)
         </summary>
 
         <textarea
@@ -233,17 +278,25 @@ export default function UploadBox() {
         />
       </details>
 
+      {/* Target country */}
       <ChoiceGroup<Market>
         legend="Which country are you applying for jobs in?"
         name="applyingTo"
         value={applyingTo}
         onChange={setApplyingTo}
         options={[
-          { value: "IN", label: "India" },
-          { value: "AE", label: "UAE" },
+          {
+            value: "IN",
+            label: "India",
+          },
+          {
+            value: "AE",
+            label: "UAE",
+          },
         ]}
       />
 
+      {/* Submit button */}
       <button
         onClick={handleCheck}
         disabled={!ready || loading}
@@ -258,8 +311,20 @@ export default function UploadBox() {
           : "Add your file and choose both options to continue."}
       </p>
 
+      {/* ATS results and email gate */}
       <div ref={resultRef} className="scroll-mt-6">
-        {result && <ResultsView result={result} onReset={reset} />}
+        {result && (
+          <ResultsView
+            result={result}
+            mode={claimId ? "preview" : "full"}
+            onReset={reset}
+            afterScore={
+              claimId ? (
+                <EmailGate claimId={claimId} />
+              ) : undefined
+            }
+          />
+        )}
       </div>
     </div>
   );
