@@ -118,7 +118,12 @@ export function Footer() {
           {site.supportEmail}
         </a>
       </p>
-      <p className="mt-2">Privacy · Terms · Refund policy (pages added in Phase 6)</p>
+      <p className="mt-3 space-x-4">
+        <a href="/privacy" className="underline">Privacy</a>
+        <a href="/terms" className="underline">Terms</a>
+        <a href="/refund-policy" className="underline">Refund policy</a>
+        <a href="/contact" className="underline">Contact</a>
+      </p>
     </footer>
   );
 }

@@ -87,7 +87,11 @@ export default function OrderForm({
           onChange={(e) => setAgreed(e.target.checked)}
           className="mt-1"
         />
-        <span>I agree to the Terms and the Refund Policy.</span>
+                <span>
+          I agree to the{" "}
+          <a href="/terms" target="_blank" className="underline">Terms</a> and the{" "}
+          <a href="/refund-policy" target="_blank" className="underline">Refund Policy</a>.
+        </span>
       </label>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
