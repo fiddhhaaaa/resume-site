@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CountryCode } from "@/config/prices";
+import Turnstile from "./Turnstile";
 
 export default function OrderForm({
   country,
@@ -16,21 +17,45 @@ export default function OrderForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Cloudflare Turnstile
+  const [token, setToken] = useState<string | null>(null);
+  const [resetKey, setResetKey] = useState(0);
+  const needsCheck = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, country, agreed }),
+        body: JSON.stringify({
+          name,
+          email,
+          country,
+          agreed,
+          turnstileToken: token,
+        }),
       });
+
+      // The token is used up now, so ask for a new one
+      setToken(null);
+      setResetKey((k) => k + 1);
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "Something went wrong.");
+      }
+
       window.location.href = data.url; // to the payment page
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err instanceof Error ? err.message : "Something went wrong."
+      );
       setLoading(false);
     }
   }
@@ -87,18 +112,26 @@ export default function OrderForm({
           onChange={(e) => setAgreed(e.target.checked)}
           className="mt-1"
         />
-                <span>
+        <span>
           I agree to the{" "}
-          <a href="/terms" target="_blank" className="underline">Terms</a> and the{" "}
-          <a href="/refund-policy" target="_blank" className="underline">Refund Policy</a>.
+          <a href="/terms" target="_blank" className="underline">
+            Terms
+          </a>{" "}
+          and the{" "}
+          <a href="/refund-policy" target="_blank" className="underline">
+            Refund Policy
+          </a>.
         </span>
       </label>
+
+      {/* Cloudflare Turnstile spam protection */}
+      <Turnstile onToken={setToken} resetKey={resetKey} />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || (needsCheck && !token)}
         className="w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
       >
         {loading ? "Please wait…" : `Pay ${priceText}`}

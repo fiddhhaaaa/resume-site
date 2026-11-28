@@ -4,17 +4,17 @@ const isProd = process.env.NODE_ENV === "production";
 
 // Start in report-only mode.
 // Change to "Content-Security-Policy" after testing
-// the live website and Razorpay payments.
+// the live website, Cloudflare Turnstile and Razorpay payments.
 const CSP_HEADER = "Content-Security-Policy-Report-Only";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
+  "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://challenges.cloudflare.com",
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

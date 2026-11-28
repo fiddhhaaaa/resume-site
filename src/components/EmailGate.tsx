@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Turnstile from "./Turnstile";
 
 export default function EmailGate({ claimId }: { claimId: string }) {
   const [email, setEmail] = useState("");
@@ -8,6 +9,9 @@ export default function EmailGate({ claimId }: { claimId: string }) {
   const [website, setWebsite] = useState(""); // hidden trap field for bots
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [resetKey, setResetKey] = useState(0);
+  const needsCheck = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -17,8 +21,12 @@ export default function EmailGate({ claimId }: { claimId: string }) {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ claimId, email, marketing, website }),
+        body: JSON.stringify({ claimId, email, marketing, website, turnstileToken: token }),
       });
+      // The token is used up now, so ask for a new one
+      setToken(null);
+      setResetKey((k) => k + 1);
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
       setStatus("sent");
@@ -87,17 +95,20 @@ export default function EmailGate({ claimId }: { claimId: string }) {
         <span>Also send me occasional resume tips and offers (optional).</span>
       </label>
 
+      <Turnstile onToken={setToken} resetKey={resetKey} />
+
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       <button
         type="submit"
-        disabled={status === "sending"}
+        disabled={status === "sending" || (needsCheck && !token)}
         className="mt-4 w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
       >
         {status === "sending" ? "Sending…" : "Email me my full report"}
       </button>
       <p className="mt-2 text-xs text-gray-500">
-        We use your email to send this report. We never sell your data.
+        We use your email to send this report. We never sell your data. See our{" "}
+        <a href="/privacy" className="underline">Privacy Policy</a>.
       </p>
     </form>
   );

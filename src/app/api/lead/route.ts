@@ -6,6 +6,7 @@ import type { CheckResult } from "@/lib/scoring/types";
 import type { Level, Market } from "@/lib/types";
 import { allow } from "@/lib/rate-limit";
 import { RETENTION } from "@/config/retention";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const ID_RE = /^[A-Za-z0-9_-]{20,64}$/;
@@ -37,6 +38,11 @@ export async function POST(req: Request) {
   // Rate limiting
   if (!(await allow(req, "lead", 6, 3600))) {
     return fail("Too many requests. Please try again later.", 429);
+  }
+
+  // Cloudflare Turnstile spam protection
+  if (!(await verifyTurnstile(body?.turnstileToken))) {
+    return fail("Please complete the spam check and try again.", 400);
   }
 
   if (!ID_RE.test(claimId)) {

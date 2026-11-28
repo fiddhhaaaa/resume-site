@@ -32,36 +32,49 @@ export default function PrivacyPage() {
           for the check. Text you paste from a job ad is used for the check and
           is not stored.
         </li>
+
         <li>
           <strong>Your full report by email.</strong> If you ask for it, we keep
           your email address, the country and career level you chose, and your
           report. The report link stays valid for {RETENTION.emailedReportDays}{" "}
           days. We keep your email address until you ask us to delete it.
         </li>
+
         <li>
           <strong>Marketing emails.</strong> We send tips or offers only if you
           tick the box asking for them. You can withdraw that choice at any time.
         </li>
+
         <li>
           <strong>Orders.</strong> When you order a resume rewrite we collect your
           name, email address, the resume you send us, the job details and notes
           you give us, and the amount and reference of your payment. We use this
           to do the work, deliver it and handle support and refunds.
         </li>
+
         <li>
           <strong>Payment details.</strong> Payments are handled by our payment
           provider. We never see or store your card or bank details.
         </li>
+
         <li>
           <strong>Your country.</strong> We guess your country from your internet
           connection to show prices in the right currency. We save your choice in
           a small cookie named &quot;country&quot; for one year.
         </li>
+
         <li>
           <strong>Abuse protection.</strong> To stop automated misuse, we turn
           your IP address into a scrambled code that cannot be reversed into the
           address, and we delete it within 2 days.
         </li>
+
+        <li>
+          <strong>Spam protection.</strong> Our forms use Cloudflare Turnstile to
+          check that a visitor is a real person. Cloudflare receives technical
+          information from your browser for this check.
+        </li>
+
         <li>
           <strong>Cookies and analytics.</strong> We do not use advertising or
           analytics cookies at this time.
@@ -70,16 +83,28 @@ export default function PrivacyPage() {
 
       <h2>Who we share data with</h2>
       <p>We do not sell your data. We use these services to run the site:</p>
+
       <ul>
         <li>Website hosting: Vercel.</li>
-        <li>Database: [Client: confirm the database provider, for example Neon or Supabase].</li>
+
+        <li>
+          Database: [Client: confirm the database provider, for example Neon or Supabase].
+        </li>
+
         <li>Sending email: Resend.</li>
-        <li>Payments: [Client: confirm the payment provider, for example Razorpay].</li>
+
+        <li>
+          Payments: [Client: confirm the payment provider, for example Razorpay].
+        </li>
+
+        <li>Spam protection: Cloudflare (Turnstile).</li>
+
         <li>
           Our writers and support team, who see your name, email, resume and
           notes only to do your order.
         </li>
       </ul>
+
       <p>
         These providers may store or process data in other countries. We also
         share data when the law requires it.
@@ -91,15 +116,21 @@ export default function PrivacyPage() {
           Check results: {RETENTION.unclaimedReportDays} days, or{" "}
           {RETENTION.emailedReportDays} days if you asked for the report by email.
         </li>
+
         <li>
-          Your resume and the finished resume: deleted {RETENTION.filesAfterDeliveryDays}{" "}
-          days after delivery.
+          Your resume and the finished resume: deleted{" "}
+          {RETENTION.filesAfterDeliveryDays} days after delivery.
         </li>
-        <li>Orders that were never paid: deleted after {RETENTION.unpaidOrderDays} days.</li>
+
+        <li>
+          Orders that were never paid: deleted after {RETENTION.unpaidOrderDays} days.
+        </li>
+
         <li>
           Order records (name, email, amount, dates): [Client: period required for
           accounting and tax, for example 7 years].
         </li>
+
         <li>Your email address on our list: until you ask us to delete it.</li>
       </ul>
 
